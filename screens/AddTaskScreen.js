@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getTasks, saveTasks } from '../utils/storage';
 
@@ -6,7 +6,7 @@ const AddTaskScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
   const inputRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
@@ -27,7 +27,14 @@ const AddTaskScreen = ({ navigation }) => {
     const existingTasks = await getTasks();
     const updatedTasks = [...existingTasks, newTask];
     await saveTasks(updatedTasks);
-    navigation.goBack();
+    Alert.alert(
+      'Tarea guardada',
+      `"${title.trim()}" ha sido agregada a tus tareas`,
+      [
+        { text: 'Ver tareas', onPress: () => navigation.navigate('Home') },
+        { text: 'Seguir agregando', onPress: () => setTitle('') }
+      ]
+    );
   };
 
   return (
