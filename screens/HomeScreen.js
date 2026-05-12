@@ -45,6 +45,7 @@ const HomeScreen = ({ navigation }) => {
   const renderItem = ({ item }) => (
     <TaskItem
       title={item.title}
+      recordatorio={item.recordatorio}
       completed={item.completed}
       onToggle={() => handleToggle(item.id)}
       onDelete={() => handleDelete(item.id)}

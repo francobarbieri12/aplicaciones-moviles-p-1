@@ -4,6 +4,7 @@ import { getTasks, saveTasks } from '../utils/storage';
 
 const AddTaskScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
+  const [recordatorio, setRecordatorio] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ const AddTaskScreen = ({ navigation }) => {
     const newTask = {
       id: Date.now(),
       title: title.trim(),
+      recordatorio: recordatorio.trim(),
       completed: false
     };
 
@@ -32,7 +34,7 @@ const AddTaskScreen = ({ navigation }) => {
       `"${title.trim()}" ha sido agregada a tus tareas`,
       [
         { text: 'Ver tareas', onPress: () => navigation.navigate('Home') },
-        { text: 'Seguir agregando', onPress: () => setTitle('') }
+        { text: 'Seguir agregando', onPress: () => { setTitle(''); setRecordatorio(''); } }
       ]
     );
   };
@@ -46,6 +48,14 @@ const AddTaskScreen = ({ navigation }) => {
         placeholder="Escribe aqui..."
         value={title}
         onChangeText={setTitle}
+      />
+      <Text style={styles.label}>Recordatorio</Text>
+      <TextInput
+        style={[styles.input, styles.textArea]}
+        placeholder="Breve descripcion..."
+        value={recordatorio}
+        onChangeText={setRecordatorio}
+        multiline
       />
       <TouchableOpacity style={styles.button} onPress={handleSave}>
         <Text style={styles.buttonText}>Guardar Tarea</Text>
@@ -72,6 +82,10 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     marginBottom: 20
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top'
   },
   button: {
     backgroundColor: 'blue',
