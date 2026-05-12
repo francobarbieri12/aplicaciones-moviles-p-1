@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTasks, saveTasks } from '../utils/storage';
 import TaskItem from '../components/TaskItem';
 
@@ -51,7 +52,7 @@ const HomeScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Mis Tareas</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={() => navigation.navigate('Login')}>
@@ -68,7 +69,7 @@ const HomeScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddTask')}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
