@@ -1,11 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { getTasks, saveTasks } from '../utils/storage';
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 const AddTaskScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
   const [recordatorio, setRecordatorio] = useState('');
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    const setupNotifications = async () => {
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('tareas', {
+          name: 'Recordatorios de tareas',
+          importance: Notifications.AndroidImportance.HIGH,
+          sound: 'default',
+        });
+      }
+      await Notifications.requestPermissionsAsync();
+    };
+    setupNotifications();
+  }, []);
 
   useEffect(() => {
     setTimeout(() => {
@@ -29,6 +52,16 @@ const AddTaskScreen = ({ navigation }) => {
     const existingTasks = await getTasks();
     const updatedTasks = [...existingTasks, newTask];
     await saveTasks(updatedTasks);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Tarea agregada con exito',
+        body: recordatorio.trim() ? `"${title.trim()}": ${recordatorio.trim()}` : title.trim(),
+        sound: 'default',
+      },
+      trigger: null,
+    });
+
     Alert.alert(
       'Tarea guardada',
       `"${title.trim()}" ha sido agregada a tus tareas`,
