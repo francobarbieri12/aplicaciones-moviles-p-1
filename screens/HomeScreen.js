@@ -50,6 +50,7 @@ const HomeScreen = ({ navigation }) => {
       title={item.title}
       recordatorio={item.recordatorio}
       imagen={item.imagen}
+      ubicacion={item.ubicacion}
       completed={item.completed}
       onToggle={() => handleToggle(item.id)}
       onDelete={() => handleDelete(item.id)}

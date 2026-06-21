@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Button, StyleSheet, Image } from 'react-native';
 
-const TaskItem = ({ title, recordatorio, imagen, completed, onToggle, onDelete }) => {
+const TaskItem = ({ title, recordatorio, imagen, ubicacion, completed, onToggle, onDelete }) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={onToggle} style={styles.taskContainer}>
@@ -15,6 +15,11 @@ const TaskItem = ({ title, recordatorio, imagen, completed, onToggle, onDelete }
           {recordatorio ? (
             <Text style={[styles.recordatorio, completed && styles.completed]}>
               {recordatorio}
+            </Text>
+          ) : null}
+          {ubicacion ? (
+            <Text style={[styles.ubicacion, completed && styles.completed]}>
+              📍 {ubicacion.latitude.toFixed(4)}, {ubicacion.longitude.toFixed(4)}
             </Text>
           ) : null}
         </View>
@@ -53,6 +58,11 @@ const styles = StyleSheet.create({
   recordatorio: {
     fontSize: 14,
     color: '#666',
+    marginTop: 4
+  },
+  ubicacion: {
+    fontSize: 12,
+    color: '#888',
     marginTop: 4
   },
   completed: {
