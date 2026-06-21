@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTasks, saveTasks } from '../utils/storage';
 import TaskItem from '../components/TaskItem';
@@ -7,13 +8,15 @@ import TaskItem from '../components/TaskItem';
 const HomeScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      const storedTasks = await getTasks();
-      setTasks(storedTasks);
-    };
-    loadTasks();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadTasks = async () => {
+        const storedTasks = await getTasks();
+        setTasks(storedTasks);
+      };
+      loadTasks();
+    }, [])
+  );
 
   const handleToggle = async (id) => {
     const updatedTasks = tasks.map(task =>
