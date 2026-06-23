@@ -16,9 +16,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const HORA_RECORDATORIO = 10;
-const MINUTO_RECORDATORIO = 0;
-
 const AddTaskScreen = ({ navigation }) => {
   const addTask = useTaskStore(state => state.addTask);
   const [title, setTitle] = useState('');
@@ -149,22 +146,34 @@ const AddTaskScreen = ({ navigation }) => {
   };
 
   const crearEventoCalendario = async (task) => {
-    const { status } = await Calendar.requestCalendarPermissionsAsync();
-    if (status !== 'granted') return;
+    try {
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Error', 'Permisos de calendario denegados');
+        return;
+      }
 
-    const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-    if (calendars.length === 0) return;
+      const calendars = await Calendar.getCalendarsAsync();
+      if (calendars.length === 0) {
+        Alert.alert('Error', 'No hay calendarios disponibles');
+        return;
+      }
 
-    const defaultCalendar = calendars.find(c => c.allowsModifications) || calendars[0];
-    const [year, month, day] = task.fechaEvento.split('-').map(Number);
+      const defaultCalendar = calendars.find(c => c.allowsModifications) || calendars[0];
 
-    await Calendar.createEventAsync(defaultCalendar.id, {
-      title: task.title,
-      startDate: new Date(year, month - 1, day, HORA_RECORDATORIO, MINUTO_RECORDATORIO),
-      endDate: new Date(year, month - 1, day, 23, 59),
-      allDay: true,
-      alarms: [{ relativeOffset: 0 }],
-    });
+      const startDate = new Date(Date.now() + 20000);
+      const endDate = new Date(Date.now() + 30000);
+
+      await Calendar.createEventAsync(defaultCalendar.id, {
+        title: task.title,
+        startDate,
+        endDate,
+        allDay: false,
+        alarms: [{ seconds: -10 }],
+      });
+    } catch (error) {
+      Alert.alert('Error', `No se pudo crear el evento: ${error.message}`);
+    }
   };
 
   const handleSave = async () => {
