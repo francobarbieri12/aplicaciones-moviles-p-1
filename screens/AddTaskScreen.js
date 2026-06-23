@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, Image, ScrollView, KeyboardAvoidingView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getTasks, saveTasks } from '../utils/storage';
+import { useTaskStore } from '../src/store/useTaskStore';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -20,6 +20,7 @@ const HORA_RECORDATORIO = 10;
 const MINUTO_RECORDATORIO = 0;
 
 const AddTaskScreen = ({ navigation }) => {
+  const addTask = useTaskStore(state => state.addTask);
   const [title, setTitle] = useState('');
   const [recordatorio, setRecordatorio] = useState('');
   const [imagenUri, setImagenUri] = useState(null);
@@ -183,9 +184,7 @@ const AddTaskScreen = ({ navigation }) => {
       completed: false
     };
 
-    const existingTasks = await getTasks();
-    const updatedTasks = [...existingTasks, newTask];
-    await saveTasks(updatedTasks);
+    await addTask(newTask);
 
     if (fechaEvento) {
       await crearEventoCalendario(newTask);

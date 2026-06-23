@@ -1,30 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getTasks, saveTasks } from '../utils/storage';
+import { useTaskStore } from '../src/store/useTaskStore';
 import TaskItem from '../components/TaskItem';
 
 const HomeScreen = ({ navigation }) => {
-  const [tasks, setTasks] = useState([]);
+  const { tasks, loadTasks, toggleTask, deleteTask } = useTaskStore();
 
   useFocusEffect(
     React.useCallback(() => {
-      const loadTasks = async () => {
-        const storedTasks = await getTasks();
-        setTasks(storedTasks);
-      };
       loadTasks();
     }, [])
   );
-
-  const handleToggle = async (id) => {
-    const updatedTasks = tasks.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-    setTasks(updatedTasks);
-    await saveTasks(updatedTasks);
-  };
 
   const handleDelete = (id) => {
     Alert.alert(
@@ -35,11 +23,7 @@ const HomeScreen = ({ navigation }) => {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: async () => {
-            const filteredTasks = tasks.filter(task => task.id !== id);
-            setTasks(filteredTasks);
-            await saveTasks(filteredTasks);
-          }
+          onPress: () => deleteTask(id)
         }
       ]
     );
@@ -54,7 +38,7 @@ const HomeScreen = ({ navigation }) => {
       contacto={item.contacto}
       fechaEvento={item.fechaEvento}
       completed={item.completed}
-      onToggle={() => handleToggle(item.id)}
+      onToggle={() => toggleTask(item.id)}
       onDelete={() => handleDelete(item.id)}
     />
   );
