@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, Image, ScrollView, KeyboardAvoidingView } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { getTasks, saveTasks } from '../utils/storage';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import * as Contacts from 'expo-contacts';
+import * as Calendar from 'expo-calendar';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -13,11 +16,18 @@ Notifications.setNotificationHandler({
   }),
 });
 
+const HORA_RECORDATORIO = 10;
+const MINUTO_RECORDATORIO = 0;
+
 const AddTaskScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
   const [recordatorio, setRecordatorio] = useState('');
   const [imagenUri, setImagenUri] = useState(null);
   const [ubicacion, setUbicacion] = useState(null);
+  const [contacto, setContacto] = useState(null);
+  const [fechaEvento, setFechaEvento] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -96,6 +106,66 @@ const AddTaskScreen = ({ navigation }) => {
     }
   };
 
+  const pickContacto = async () => {
+    const { status } = await Contacts.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Necesitas permitir acceso a contactos');
+      return;
+    }
+    const contacts = await Contacts.getContactsAsync({
+      fields: [Contacts.Fields.Name],
+      pageSize: 5,
+      sort: Contacts.SortTypes.FirstName,
+    });
+    if (contacts.length === 0) {
+      Alert.alert('Sin contactos', 'No se encontraron contactos');
+      return;
+    }
+    Alert.alert(
+      'Seleccionar contacto',
+      'Elegi un contacto',
+      [
+        ...contacts.data.map((c) => ({
+          text: c.name || 'Sin nombre',
+          onPress: () => setContacto({ id: c.id, name: c.name }),
+        })),
+        { text: 'Cancelar', style: 'cancel' },
+      ]
+    );
+  };
+
+  const openDatePicker = () => {
+    setTempDate(fechaEvento ? new Date(fechaEvento + 'T12:00:00') : new Date());
+    setShowDatePicker(true);
+  };
+
+  const onDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      setFechaEvento(dateStr);
+    }
+  };
+
+  const crearEventoCalendario = async (task) => {
+    const { status } = await Calendar.requestCalendarPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+    if (calendars.length === 0) return;
+
+    const defaultCalendar = calendars.find(c => c.allowsModifications) || calendars[0];
+    const [year, month, day] = task.fechaEvento.split('-').map(Number);
+
+    await Calendar.createEventAsync(defaultCalendar.id, {
+      title: task.title,
+      startDate: new Date(year, month - 1, day, HORA_RECORDATORIO, MINUTO_RECORDATORIO),
+      endDate: new Date(year, month - 1, day, 23, 59),
+      allDay: true,
+      alarms: [{ relativeOffset: 0 }],
+    });
+  };
+
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert('Error', 'Escribe un titulo para la tarea');
@@ -108,12 +178,18 @@ const AddTaskScreen = ({ navigation }) => {
       recordatorio: recordatorio.trim(),
       imagen: imagenUri || null,
       ubicacion: ubicacion || null,
+      contacto: contacto || null,
+      fechaEvento: fechaEvento || null,
       completed: false
     };
 
     const existingTasks = await getTasks();
     const updatedTasks = [...existingTasks, newTask];
     await saveTasks(updatedTasks);
+
+    if (fechaEvento) {
+      await crearEventoCalendario(newTask);
+    }
 
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -126,10 +202,17 @@ const AddTaskScreen = ({ navigation }) => {
 
     Alert.alert(
       'Tarea guardada',
-      `"${title.trim()}" ha sido agregada a tus tareas`,
+      `"${title.trim()}" ha sido agregada a tus tareas${fechaEvento ? '. Evento creado en calendario.' : ''}`,
       [
         { text: 'Ver tareas', onPress: () => navigation.navigate('Home') },
-        { text: 'Seguir agregando', onPress: () => { setTitle(''); setRecordatorio(''); setImagenUri(null); setUbicacion(null); } }
+        { text: 'Seguir agregando', onPress: () => {
+          setTitle('');
+          setRecordatorio('');
+          setImagenUri(null);
+          setUbicacion(null);
+          setContacto(null);
+          setFechaEvento(null);
+        }}
       ]
     );
   };
@@ -178,7 +261,37 @@ const AddTaskScreen = ({ navigation }) => {
         </TouchableOpacity>
         {ubicacion && (
           <TouchableOpacity onPress={() => setUbicacion(null)}>
-            <Text style={styles.removeUbicacion}>Quitar ubicacion</Text>
+            <Text style={styles.removeText}>Quitar ubicacion</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={styles.label}>Contacto</Text>
+        <TouchableOpacity style={styles.contactButton} onPress={pickContacto}>
+          <Text style={styles.contactButtonText}>
+            {contacto ? `👤 ${contacto.name}` : 'Seleccionar contacto'}
+          </Text>
+        </TouchableOpacity>
+        {contacto && (
+          <TouchableOpacity onPress={() => setContacto(null)}>
+            <Text style={styles.removeText}>Quitar contacto</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={styles.label}>Evento en calendario</Text>
+        <TouchableOpacity style={styles.dateButton} onPress={openDatePicker}>
+          <Text style={styles.dateButtonText}>
+            {fechaEvento ? `📅 ${fechaEvento}` : 'Seleccionar fecha'}
+          </Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={tempDate}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+          />
+        )}
+        {fechaEvento && (
+          <TouchableOpacity onPress={() => setFechaEvento(null)}>
+            <Text style={styles.removeText}>Quitar fecha</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.button} onPress={handleSave}>
@@ -271,7 +384,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600'
   },
-  removeUbicacion: {
+  contactButton: {
+    backgroundColor: '#9333ea',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10
+  },
+  contactButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  dateButton: {
+    backgroundColor: '#ea33a3',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10
+  },
+  dateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  removeText: {
     color: 'red',
     fontSize: 14,
     textAlign: 'center',

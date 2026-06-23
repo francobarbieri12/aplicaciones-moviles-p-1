@@ -51,6 +51,8 @@ const HomeScreen = ({ navigation }) => {
       recordatorio={item.recordatorio}
       imagen={item.imagen}
       ubicacion={item.ubicacion}
+      contacto={item.contacto}
+      fechaEvento={item.fechaEvento}
       completed={item.completed}
       onToggle={() => handleToggle(item.id)}
       onDelete={() => handleDelete(item.id)}
